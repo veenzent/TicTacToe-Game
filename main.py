@@ -1,11 +1,16 @@
 # TIC TAC TOE
+# import time
 import socket
 import threading
-# import pickle
+import pickle
 # from kivy.lang import Builder
+# from pynput.keyboard import Key, Controller
 from kivy.app import App
-from kivy.properties import ObjectProperty
+# from kivy.properties import ObjectProperty
 from kivy.uix.screenmanager import ScreenManager, Screen
+
+
+# keyboard = Controller()
 
 
 class MenuManager(ScreenManager):
@@ -22,32 +27,44 @@ class MultiplayerScreen(Screen):
 
     def __init__(self, **kwargs):
         super(MultiplayerScreen, self).__init__(**kwargs)
-        self.player2 = None
-        self.addr = None
+        self.status = None
+        self.server = None
+        self.turn = "X"
 
     def host_game(self):
-        # self.ids.connectivity.text = f"Connected to address: "
-        server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        """
+        Hosts a game and waits for a connection from another player.
+        """
+        self.ids.host.disabled = True
+        self.ids.join.disabled = True
+
+        if self.ids.host.disabled:
+            self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
-            server.bind((self.host, self.port))
-            self.ids.host.disabled = True
-            self.ids.join.disabled = True
+            self.server.bind((self.host, self.port))
+            self.server.listen(1)
+            self.status = "Server started"
             print("Server started")
-            server.listen(1)
-            self.ids.conn.text = "Server Started, waiting for connection..."
         except Exception as e:
             self.ids.conn.text = str(e)
             print(e)
+        # if self.status == "Server started":
+        #     self.ids.conn.text = "Server Started, waiting for connection..."
 
-        # server.listen(1)
-        # self.ids.conn.text = "Server Started, waiting for connection..."
-        # print("Server Listening")
-
-        #self.player2, self.addr = server.accept()
-        # print("Server Connected to by Opponent)
-        # print(self.ids.conn.text)
-        # while True:
-        #     threading.Thread(target=self.connection_handler, args=(player2,)).start()
+        while True:
+            try:
+                player2, address = self.server.accept()
+                if not address:
+                    self.ids.conn.text = "Server Started, waiting for connection..."
+                    break
+                else:
+                    self.ids.conn.text = "Server Connected to by Opponent"
+                    print(self.ids.conn.text)
+            except Exception as e:
+                self.ids.conn.text = str(e)
+                print(e)
+            break
+        threading.Thread(target=self.connection_handler, args=(player2,)).start()
 
     def join(self):
         player2 = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -62,33 +79,45 @@ class MultiplayerScreen(Screen):
             self.ids.status.text = str(e)
 
     def connection_handler(self, player2):
-        self.move = "X"
         while True:
-            if self.move == "X":
-                move1 = input("Enter your move: ")
-                self.move = "O"
-                player2.send(move1.encode("utf-8"))
-                print("Sent " + move1)
+            if self.turn == "X":
+                player2.send(self.turn.encode("utf-8"))
+                self.turn = "O"
+                print("Sent " + self.turn)
             else:
                 data = player2.recv(1024)
                 if not data:
                     print("disconnected")
                     break
                 else:
-                    move2 = data.decode("utf-8")
-                    print("Received: " + move2)
-                    self.move = "X"
+                    self.move = data.decode("utf-8")
+                    print("Received: " + self.move)
+                    self.turn = "X"
         print("Lost connection")
         player2.close()
 
+    def play(self, btn):
+        if self.turn == "X":
+            btn.text = self.move
+            btn.disabled = True
+            self.ids.display.text = "O's Turn!"
+            self.turn = "O"
+            self.no_winner()
+            self.game_rules()
+        else:
+            btn.text = "O"
+            btn.disabled = True
+            self.ids.display.text = "X's Turn!"
+            self.turn = "X"
+            self.no_winner()
+            self.game_rules()
 
-class T3Main(MultiplayerScreen):
+
+class T3Main(Screen):
     def __init__(self, **kwargs):
         super(T3Main, self).__init__(**kwargs)
         self.turn = "X"
         self.count = 1
-        self.button = ObjectProperty()
-        self.move = ""
 
     # Game Logic
     def game_rules(self):
@@ -126,13 +155,21 @@ class T3Main(MultiplayerScreen):
                     self.end_game()
 
     def play(self, btn):
-        self.button = btn
-        if self.turn == "X":                # Switches between "X" and "O"
-            btn.text = "X"                  # Sets button text to "X"
-            btn.disabled = True             # Disables button in kvlang  on press
+        """
+        Switches between "X" and "O" and updates the game state accordingly.
+
+        Args:
+            btn: The button that was pressed.
+
+        Returns:
+            None
+        """
+        if self.turn == "X":                        # Switches between "X" and "O"
+            btn.text = "X"                          # Sets button text to "X"
+            btn.disabled = True                     # Disables button in kvlang  on press
             self.ids.display.text = "O's Turn!"
-            self.turn = "O"                 # Sets the next move to "O"
-            self.no_winner()                # Checks if there's a winner after every move
+            self.turn = "O"                         # Sets the next move to "O"
+            self.no_winner()                        # Checks if there's a winner after every move
             self.game_rules()
         else:
             btn.text = "O"
@@ -144,6 +181,17 @@ class T3Main(MultiplayerScreen):
 
     # A draw scenario
     def no_winner(self):
+        """
+        Check if there is no winner in the game.
+
+        This function iterates through the buttons on the game board and counts the number of disabled buttons that are not empty and not colored green. If the count is equal to 9, it means that all buttons are disabled and the game is a tie. In this case, the text on the display is updated to indicate a tie.
+
+        Parameters:
+            self (object): The current instance of the class.
+
+        Returns:
+            None
+        """
         disabled_btn = 0
         for i in range(1, 10):
             if self.ids['b'+str(i)].disabled and self.ids['b'+str(i)].text != "" and \
