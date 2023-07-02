@@ -1,3 +1,6 @@
+# Checking out Codium AI's code refactoring
+# On this branch I'm going to try to refactor the code to make it more readable and easier to understand.
+
 # TIC TAC TOE
 # import time
 import socket
@@ -120,39 +123,39 @@ class T3Main(Screen):
         self.count = 1
 
     # Game Logic
-    def game_rules(self):
-        # Across
-        for i in range(1, 8, 3):
-            if self.ids['b'+str(i)].text != "" and self.ids['b'+str(i)].text == self.ids['b'+str(i+1)].text \
-                    and self.ids['b'+str(i+1)].text == self.ids['b'+str(i+2)].text:
-                self.ids['b'+str(i)].color = "green"
-                self.ids['b'+str(i+1)].color = "green"
-                self.ids['b'+str(i+2)].color = "green"
-                self.end_game()
-        # Down
-        for i in range(1, 4):
-            if self.ids['b'+str(i)].text != "" and self.ids['b'+str(i)].text == self.ids['b'+str(i+3)].text \
-                    and self.ids['b'+str(i+3)].text == self.ids['b'+str(i+6)].text:
-                self.ids['b'+str(i)].color = "green"
-                self.ids['b'+str(i+3)].color = "green"
-                self.ids['b'+str(i+6)].color = "green"
-                self.end_game()
-        # Diagonal
-        for i in range(1, 4, 2):
-            if i == 1:
-                if self.ids['b'+str(i)].text != "" and self.ids['b'+str(i)].text == self.ids['b'+str(i+4)].text \
-                        and self.ids['b'+str(i+4)].text == self.ids['b'+str(i+8)].text:
-                    self.ids['b'+str(i)].color = "green"
-                    self.ids['b'+str(i+4)].color = "green"
-                    self.ids['b'+str(i+8)].color = "green"
-                    self.end_game()
-            elif i == 3:
-                if self.ids['b'+str(i)].text != "" and self.ids['b'+str(i)].text == self.ids['b'+str(i+2)].text \
-                        and self.ids['b'+str(i+2)].text == self.ids['b'+str(i+4)].text:
-                    self.ids['b'+str(i)].color = "green"
-                    self.ids['b'+str(i+2)].color = "green"
-                    self.ids['b'+str(i+4)].color = "green"
-                    self.end_game()
+def game_rules(self):
+    """
+    Check the game rules to determine if there is a winner.
+    
+    This function checks the game board to see if there is a winning combination of symbols. It checks for
+    three in a row horizontally, vertically, and diagonally. If a winning combination is found, the
+    corresponding buttons are highlighted in green and the game ends.
+    
+    Parameters:
+        self (object): The current instance of the class.
+    
+    Returns:
+        None
+    """
+    # Across
+    for i in range(1, 8, 3):
+        if (text := self.ids['b'+str(i)].text) and text == self.ids['b'+str(i+1)].text == self.ids['b'+str(i+2)].text:
+            self.ids['b'+str(i)].color = self.ids['b'+str(i+1)].color = self.ids['b'+str(i+2)].color = "green"
+            self.end_game()
+            
+    # Down
+    for i in range(1, 4):
+        if (text := self.ids['b'+str(i)].text) and text == self.ids['b'+str(i+3)].text == self.ids['b'+str(i+6)].text:
+            self.ids['b'+str(i)].color = self.ids['b'+str(i+3)].color = self.ids['b'+str(i+6)].color = "green"
+            self.end_game()
+            
+    # Diagonal
+    if (text := self.ids['b1'].text) and text == self.ids['b5'].text == self.ids['b9'].text:
+        self.ids['b1'].color = self.ids['b5'].color = self.ids['b9'].color = "green"
+        self.end_game()
+    elif (text := self.ids['b3'].text) and text == self.ids['b5'].text == self.ids['b7'].text:
+        self.ids['b3'].color = self.ids['b5'].color = self.ids['b7'].color = "green"
+        self.end_game()
 
     def play(self, btn):
         """
